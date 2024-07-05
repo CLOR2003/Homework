@@ -8,10 +8,10 @@ import './App.css';
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path='/Homework' element={<Home/>}/>
-        <Route path='/Homework/tips' element={<Game/>}/>
-        <Route path='Homework/*' element={<Error/>}/>
+      <Routes basename={process.env.PUBLIC_URL}>
+        <Route path='/' element={<Home/>}/>
+        <Route path='/tips' element={<Game/>}/>
+        <Route path='/*' element={<Error/>}/>
       </Routes>
     </Router>
   );
