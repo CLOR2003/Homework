@@ -1,6 +1,5 @@
 import React from 'react';
 import logo from './logo.svg';
-import Button from './Button.js';
 import './App.css'
 
 const Home = () =>{
@@ -19,7 +18,6 @@ const Home = () =>{
             >
                 Learn React
             </a>
-            <Button />
         </header>
     </div>);
 }
