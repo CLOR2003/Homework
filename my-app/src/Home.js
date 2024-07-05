@@ -1,4 +1,5 @@
 import React from 'react';
+import {Link} from 'react-router-dom';
 import logo from './logo.svg';
 import './App.css'
 
@@ -18,6 +19,7 @@ const Home = () =>{
             >
                 Learn React
             </a>
+            <Link to={"/tips"}>Play</Link>
         </header>
     </div>);
 }
