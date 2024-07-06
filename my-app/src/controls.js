@@ -1,7 +1,6 @@
-import {Scene,ExecuteCodeAction,ActionManager} from "@babylonjs/core";
+import {ExecuteCodeAction,ActionManager} from "@babylonjs/core";
 
-var createScene = function (engine) {
-    var scene = new Scene(engine);
+var testControls = function (scene) {
     // Register key events
     var inputMap = {};
     scene.actionManager = new ActionManager(scene);
@@ -22,7 +21,7 @@ var createScene = function (engine) {
         )
     );
 
-    return scene;
+    return inputMap;
 };
 
-export default createScene;
+export default testControls;

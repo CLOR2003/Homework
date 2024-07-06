@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Engine, FreeCamera, Vector3, HemisphericLight, MeshBuilder } from "@babylonjs/core";
-import createScene from "./controls";
+import { Scene, Engine, FreeCamera, Vector3, HemisphericLight, MeshBuilder } from "@babylonjs/core";
+import testControls from "./controls";
 
 export default function Game(){
   const reactCanvas = useRef(null);
@@ -13,7 +13,7 @@ export default function Game(){
     if (!canvas) return;
 
     const engine = new Engine(canvas);
-    const scene = createScene(engine);
+    const scene = new Scene(engine);
 
     // This creates and positions a free camera (non-mesh)
     const camera = new FreeCamera("camera1", new Vector3(0, 5, -10), scene);
@@ -39,7 +39,7 @@ export default function Game(){
     // Our built-in 'ground' shape.
     MeshBuilder.CreateGround("ground", { width: 6, height: 6 }, scene);
 
-    let inputMap={};
+    var inputMap=testControls(scene);
 
     scene.onBeforeRenderObservable.add(() => {
       if (inputMap["w"] || inputMap["ArrowUp"]) {
