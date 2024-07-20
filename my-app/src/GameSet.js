@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Scene, Engine, UniversalCamera, Vector3, HemisphericLight, MeshBuilder,Axis } from "@babylonjs/core";
+import { Scene, Engine, UniversalCamera, Vector3, HemisphericLight, MeshBuilder,Axis,DynamicTexture,StandardMaterial } from "@babylonjs/core";
 import testControls from "./controls";
 
 export default function Game(){
@@ -12,7 +12,7 @@ export default function Game(){
 
     if (!canvas) return;
 
-    const engine = new Engine(canvas);
+    const engine = new Engine(canvas,{antialias:true});
     const scene = new Scene(engine);
 
     // This creates and positions a free camera (non-mesh)
@@ -25,6 +25,13 @@ export default function Game(){
     camera.attachControl(canvas,true);
 
     camera.speed = 0.2;
+
+    canvas.addEventListener("click", () => {
+      canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+      if (canvas.requestPointerLock) {
+          canvas.requestPointerLock();
+      }
+    }, false);
 
     // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
     const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
@@ -44,8 +51,6 @@ export default function Game(){
     var inputMap=testControls(scene);
     
     scene.onBeforeRenderObservable.add(() => {
-
-
       if (inputMap["w"]) {
         camera.position.addInPlace(camera.getDirection(Axis.Z).scale(0.1));
       }
@@ -66,26 +71,53 @@ export default function Game(){
       }
     });
 
-  engine.runRenderLoop(() => {
-    box.rotation.x += 0.01;
-    scene.render();
-  });
+    const textureSize = 256;
+    const dynamicTexture = new DynamicTexture("dynamicTexture", textureSize, scene, false);
+    const textureContext = dynamicTexture.getContext();
+    
+    // Draw the crosshair on the DynamicTexture
+    const crosshairSize = 20;
+    const crosshairColor = "red";
+    textureContext.fillStyle = crosshairColor;
+    textureContext.beginPath();
+    textureContext.arc(textureSize / 2, textureSize / 2, crosshairSize / 2, 0, 2 * Math.PI);
+    textureContext.fill();
+    dynamicTexture.update();
+    
+    // Create a plane to display the crosshair
+    const crosshairPlane = MeshBuilder.CreatePlane("crosshairPlane", { size: 0.02 }, scene);
+    const crosshairMaterial = new StandardMaterial("crosshairMaterial", scene);
+    crosshairMaterial.diffuseTexture = dynamicTexture;
+    crosshairMaterial.useAlphaFromDiffuseTexture = true;
 
-  const resize = () => {
-    engine.resize();
-  };
+    crosshairPlane.material = crosshairMaterial;
+    
+    // Position the crosshair plane in front of the camera
+    crosshairPlane.position = new Vector3(0, 0, 2);
+    crosshairPlane.parent = camera;
 
-  if (window) {
-    window.addEventListener("resize", resize);
-  }
+    crosshairPlane.renderingGroupId = 1;
+    
+    engine.runRenderLoop(() => {
+      box.rotation.x += 0.01;
+      scene.render();
+    });
 
-  return () => {
-    engine.dispose();
+    const resize = () => {
+      engine.resize();
+    };
 
     if (window) {
-      window.removeEventListener("resize", resize);
+      window.addEventListener("resize", resize);
     }
-  };
+
+    return () => {
+      engine.dispose();
+
+      if (window) {
+        window.removeEventListener("resize", resize);
+      }
+    };
 }, []);
 
   return <canvas ref={reactCanvas} style={{width: "100vw", height: "100vh"}}/>;
