@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Scene, Engine, UniversalCamera, Vector3, HemisphericLight, MeshBuilder,Axis,DynamicTexture,StandardMaterial } from "@babylonjs/core";
+import { Scene, Engine, UniversalCamera, Vector3, HemisphericLight, MeshBuilder,Axis,DynamicTexture,StandardMaterial,
+  Ray,Color3} from "@babylonjs/core";
 import testControls from "./controls";
 
 export default function Game(){
@@ -45,12 +46,34 @@ export default function Game(){
     // Move the box upward 1/2 its height
     box.position.y = 1;
 
-    // Our built-in 'ground' shape.
-    MeshBuilder.CreateGround("ground", { width: 6, height: 6 }, scene);
+    var groundSize = 20;
+    var cubeSize = 1;
+    const cubes = [];
+
+    for (var i = -groundSize / 2; i < groundSize / 2; i++) {
+      for (var j = -groundSize / 2; j < groundSize / 2; j++) {
+          var cube = MeshBuilder.CreateBox("cube", { size: cubeSize }, scene);
+          cube.position.x = i * cubeSize;
+          cube.position.z = j * cubeSize;
+          cube.checkCollisions = true;
+          cubes.push(cube);
+      }
+  }
 
     var inputMap=testControls(scene);
+
+    const defaultMaterial = new StandardMaterial('defaultMaterial', scene);
+    defaultMaterial.diffuseColor = new Color3(1, 1, 1);
+
+    const highlightMaterial = new StandardMaterial('highlightMaterial', scene);
+    highlightMaterial.diffuseColor = new Color3(1, 0, 0);
+
+    const ray = new Ray(new Vector3(), new Vector3(),8);
+
+    let highlightedCube = null;
     
     scene.onBeforeRenderObservable.add(() => {
+    
       if (inputMap["w"]) {
         camera.position.addInPlace(camera.getDirection(Axis.Z).scale(0.1));
       }
@@ -69,6 +92,29 @@ export default function Game(){
       if (inputMap["Shift"]){
         camera.position.y -= 0.1;
       }
+      // Update the ray
+      const origin = camera.position.clone();
+      const forward = camera.getForwardRay().direction.clone();
+      ray.origin = origin;
+      ray.direction = forward;
+
+      // Intersect the ray with the cubes
+      const pickInfo = scene.pickWithRay(ray);
+      if (pickInfo.hit && pickInfo.pickedMesh) {
+        if (highlightedCube !== pickInfo.pickedMesh) {
+          if (highlightedCube) {
+              highlightedCube.material = defaultMaterial;
+          }
+          highlightedCube = pickInfo.pickedMesh;
+          highlightedCube.material = highlightMaterial;
+      }
+      } else {
+      // Reset the previously highlighted cube
+      if (highlightedCube) {
+          highlightedCube.material = defaultMaterial;
+          highlightedCube = null;
+      }
+  }
     });
 
     const textureSize = 256;
@@ -97,7 +143,14 @@ export default function Game(){
     crosshairPlane.parent = camera;
 
     crosshairPlane.renderingGroupId = 1;
-    
+    crosshairPlane.isPickable = false;
+
+    camera.applyGravity = true;
+    camera.checkCollisions = true;
+    camera.ellipsoid = new Vector3(1, 1, 1); // Adjust the ellipsoid to match the camera's bounding box
+    scene.gravity = new Vector3(0, -0.9, 0); // Adjust gravity as needed
+    camera._needMoveForGravity = true; // Ensure camera responds to gravity
+
     engine.runRenderLoop(() => {
       box.rotation.x += 0.01;
       scene.render();
